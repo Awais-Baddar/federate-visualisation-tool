@@ -10,16 +10,13 @@ interface TreeViewProps {
 }
 
 const matchesFilter = (node: BBNode, filter: string): boolean => {
-  if (!filter) {
-    return true;
-  }
+  if (!filter) return true;
   return node.name.toLowerCase().includes(filter.toLowerCase());
 };
 
 const filterTree = (node: BBNode, filter: string): BBNode | null => {
-  if (!filter) {
-    return node;
-  }
+  if (!filter) return node;
+
   const children = node.children
     ?.map((child) => filterTree(child, filter))
     .filter((child): child is BBNode => Boolean(child));
@@ -27,6 +24,7 @@ const filterTree = (node: BBNode, filter: string): BBNode | null => {
   if (matchesFilter(node, filter) || (children && children.length > 0)) {
     return { ...node, children };
   }
+
   return null;
 };
 
@@ -43,29 +41,31 @@ const NodeRow = ({
   selectedId?: string;
   expandedIds?: Set<string>;
 }) => {
-  const [expanded, setExpanded] = useState(depth < 1 || expandedIds?.has(node.id));
+  const [expanded, setExpanded] = useState(
+    depth < 1 || expandedIds?.has(node.id),
+  );
   const hasChildren = (node.children?.length ?? 0) > 0;
   const isSelected = selectedId === node.id;
 
   useEffect(() => {
     if (expandedIds?.has(node.id) || selectedId === node.id) {
-      // TODO FIX THIS: KAN-42
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setExpanded(true);
     }
   }, [expandedIds, node.id, selectedId]);
 
   return (
     <div className="tree-node">
-      <button
-        type="button"
+      <div
         className={`tree-node__row ${isSelected ? "is-selected" : ""}`}
         onClick={() => onSelect(node)}
         style={{ paddingLeft: `${depth * 16}px` }}
         data-node-id={node.id}
+        role="button"
+        tabIndex={0}
       >
         {hasChildren ? (
           <button
+            type="button"
             className="tree-node__toggle"
             onClick={(event) => {
               event.stopPropagation();
@@ -78,10 +78,16 @@ const NodeRow = ({
         ) : (
           <span className="tree-node__toggle" />
         )}
-        <span className={node.type === "tree" ? "tree-node__folder" : "tree-node__file"}>
+
+        <span
+          className={
+            node.type === "tree" ? "tree-node__folder" : "tree-node__file"
+          }
+        >
           {node.name}
         </span>
-      </button>
+      </div>
+
       {expanded &&
         node.children?.map((child) => (
           <NodeRow
@@ -97,22 +103,29 @@ const NodeRow = ({
   );
 };
 
-export const TreeView = ({ root, onSelect, filter, selectedId, expandedIds }: TreeViewProps) => {
+export const TreeView = ({
+  root,
+  onSelect,
+  filter,
+  selectedId,
+  expandedIds,
+}: TreeViewProps) => {
   const filtered = useMemo(() => filterTree(root, filter), [root, filter]);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!selectedId || !containerRef.current) {
-      return;
-    }
+    if (!selectedId || !containerRef.current) return;
+
     const frame = requestAnimationFrame(() => {
       const target = containerRef.current?.querySelector(
-        `[data-node-id="${CSS.escape(selectedId)}"]`
+        `[data-node-id="${CSS.escape(selectedId)}"]`,
       );
+
       if (target instanceof HTMLElement) {
         target.scrollIntoView({ block: "center", behavior: "smooth" });
       }
     });
+
     return () => cancelAnimationFrame(frame);
   }, [selectedId, filtered]);
 
