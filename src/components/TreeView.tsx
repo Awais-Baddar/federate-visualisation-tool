@@ -41,17 +41,15 @@ const NodeRow = ({
   selectedId?: string;
   expandedIds?: Set<string>;
 }) => {
-  const [expanded, setExpanded] = useState(
-    depth < 1 || expandedIds?.has(node.id),
-  );
   const hasChildren = (node.children?.length ?? 0) > 0;
   const isSelected = selectedId === node.id;
 
-  useEffect(() => {
-    if (expandedIds?.has(node.id) || selectedId === node.id) {
-      setExpanded(true);
-    }
-  }, [expandedIds, node.id, selectedId]);
+  const [manualExpanded, setManualExpanded] = useState(depth < 1);
+
+  const isForcedExpanded =
+    expandedIds?.has(node.id) === true || selectedId === node.id;
+
+  const expanded = hasChildren && (manualExpanded || isForcedExpanded);
 
   return (
     <div className="tree-node">
@@ -62,6 +60,12 @@ const NodeRow = ({
         data-node-id={node.id}
         role="button"
         tabIndex={0}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onSelect(node);
+          }
+        }}
       >
         {hasChildren ? (
           <button
@@ -69,7 +73,7 @@ const NodeRow = ({
             className="tree-node__toggle"
             onClick={(event) => {
               event.stopPropagation();
-              setExpanded((prev) => !prev);
+              setManualExpanded((prev) => !prev);
             }}
             aria-label={expanded ? "Collapse" : "Expand"}
           >
