@@ -130,7 +130,6 @@ export const HomePage = () => {
   const handleViewInTree = (node: BBNode) => {
     setSelected(node);
     setView("tree");
-    setFilter("");
   };
 
   const selectedExpandedIds = useMemo(() => {
